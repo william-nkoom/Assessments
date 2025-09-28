@@ -1,0 +1,372 @@
+---
+title: "BIOS 640 Assessment Week 3"
+author: "William Opoku-Nkoom"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(here,
+               rio,
+               tidyverse,
+               janitor,
+               ggplot2,
+               RColorBrewer,
+               viridis,
+               cowplot,
+               ggpubr,
+               gghighlight,
+               rcartocolor,
+               skimr
+               ) # load essential packages
+```
+
+
+```{r import, include = FALSE}
+# import data sets
+nhanes_clean <- import(here("week_3", "Data", "cleaned_NHANES.csv")) # NHANES
+diet_data <- import(here("week_3", "Data", "diet.csv")) # diet data
+dim(nhanes_clean) # view dimensions of NHANES data
+names(nhanes_clean) # view column names of NHANES data
+str(nhanes_clean) # view structure of the NHANES data frame
+dim(diet_data) # view column names of diet data
+names(diet_data) # view column names of diet data
+str(diet_data) # view structure of the diet data frame
+skim(nhanes_clean) # verify missing values
+```
+
+**Exercise 1: Reproducing and arranging ggplot2 figures**
+
+```{r Exercise 1, echo = FALSE}
+# produce a histogram of age 20 years and above, grouped by gender - First Figure
+nhanes_20 <- nhanes_clean %>%
+  filter(age >= 20) %>% # filter age 20 years and above
+  ggplot(aes(x= age, fill = gender)) + # group by gender
+  geom_histogram(bins = 13, position = "dodge") +
+  labs(x = "Age(years)",
+       y = "Number of respondents",
+       title = "Fig.1: Distribution of age of respondents") +
+  scale_x_continuous(breaks = seq(20, 80, by = 5)) + # scale x axis at intervals of 5 from 20
+  theme(legend.position = "right",
+        plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+  )
+
+nhanes_20
+
+  # bar graph of ethnicity_2 grouped by gender - Figure 2
+nhanes_bar <- nhanes_clean %>%
+  ggplot(aes(x = ethnicity_2, fill = gender)) + # group by gender
+  geom_bar(position = "fill" ) + # stack to same height
+  labs(x = "Ethnicity",
+       y = "Ratio of respondents",
+       title = "Fig. 2: Repartition of gender by ethnicity") +
+  theme(legend.position = "right",
+        plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+nhanes_bar
+
+# combine the 2 plots with the cow_plot package
+plot_grid(
+  nhanes_20, nhanes_bar,
+  rel_heights = c(1, 2),nrow = 2, ncol = 1
+)
+
+# combine the 2 plots with ggarrange()
+combined_gg <- ggarrange(
+  nhanes_20, nhanes_bar, nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "right"
+)
+
+annotate_figure(combined_gg,
+                bottom = text_grob("Fig. 4: Combined plot with ggarrange", size = 10, face = "bold")) # add global title
+```
+
+##### Differences between the outputs from the two packages
+The layout of the combination produced from the ggpubr package (Fig.4), i.e. with the ggarrange() function is better than that produced from the cowplot package, i.e. with the plot_grid() function. This is because while the former permits you to retain only one legend in the output automatically, this argument is not permitted in the latter function, unless you extract them first and add a legend to the combined plot, which is a manual process and time consuming. 
+
+Moreover, the output from the former produces equal dimensions (i.e. same width for plot A and B and likewise the length). On the contrary, the dimensions of both plots are not the same from the output of the latter. The latter function shrinks the width of the first plot. 
+
+
+
+**Exercise 2: Visualizing key characteristics**
+
+```{r Exercise 2, echo = FALSE, message = FALSE}
+
+# visualize age distribution by gender and ethnicity
+age_dist <- ggplot(nhanes_clean,
+                   aes(x = age)) +
+  geom_histogram() +
+  labs(x = "Age(years)",
+       y = "Number of respondents",
+       title = "Fig. 5: Distribution of age by gender and ethnicity") +
+  theme(plot.title = element_text(size = 10),
+        axis.title = element_text(size = 9),
+        axis.text = element_text(size = 6)) +
+  facet_grid(
+    gender ~ ethnicity_2,
+    labeller = labeller(
+      gender = c(
+        'Male' = "Male",
+        'Female' = "Female")
+    )
+) 
+age_dist
+
+# Visualize gender distribution
+gen_dist <- ggplot(nhanes_clean,
+                   aes(x = gender)) +
+  geom_bar(fill = "turquoise", color = "black") + 
+  labs(x = "Gender",
+       y = "Number of respondents",
+       title = "Fig. 6: Repartition of the population by gender") +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+gen_dist
+
+# visualize the distribution of ethnicity
+eth_dist_1 <- ggplot(nhanes_clean,
+                     aes(x = ethnicity_1)) + # ethnicity 1
+  geom_bar(fill = "turquoise", color = "black") + 
+  labs(x = "Ethnicity",
+       y = "Number of respondents",
+       title = "Fig. 7: Repartition of the population by ethnicity_1") +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+eth_dist_1
+
+eth_dist_2 <- ggplot(nhanes_clean,
+                     aes(x = ethnicity_2)) + # ethnicity 2
+  geom_bar(fill = "turquoise", color = "black") + 
+  labs(x = "Ethnicity",
+       y = "Number of respondents",
+       title = "Fig. 8: Repartition of the population by ethnicity_2") +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+eth_dist_2
+
+# save plots with ggsave()
+ggsave("age_dist.png", path = here("week_3", "Figures"))
+ggsave("gen_dist.png", path = here("week_3", "Figures"))
+ggsave("eth_dist_1.png", path = here("week_3", "Figures"))
+ggsave("eth_dist_2.png", path = here("week_3", "Figures"))
+
+# remove ethnicity_1 from the data set
+nhanes_clean <- nhanes_clean %>%
+  select(-ethnicity_1) # ethnicity_1 removed to retain only ethnicity_2
+
+```
+
+
+
+
+##### Description of the distributions
+
+In general the distribution of age (Fig. 5) is multimodal. This is typically evident among the Whites who dominate in the study population.The multimodal distribution is equally evident among Blacks and Mexicans. In these three population sub-groups, the peaks of the distribution can be observed roughly among respondents aged less or equal 20 years, between 30-40 years, between 50-60 years and 60-70 years. This is very clear among the Whites. The age distributions among Blacks, Mexicans and Other ethnicity, including Other Hispanics could be described as skewed to the right. In other words the number of respondents decreases with age in these study population sub-groups. The distribution of age among the Asians appear to be normal. There is basically no distinction between males and females with respect to their distribution by age. 
+
+There are almost equal number of males and females in the study population, even though the females slightly outnumber the males (Fig. 6). As indicated earlier, the Whites dominate, followed by the Blacks, then the Mexicans, then the Others. It is evident that most of the ethnic groups indicated as "Others" are actually Asians (Fig. 8). This distinction is crucial as the Asian population sub-group even outnumber those described as "Other Hispanics". For this reason, I would say that the second grouping by ethnicity, i.e. ethnicity_2 (Fig. 8) is better than that of the first (Fig. 7).  
+
+There are no missing values of these variables, i.e. age, gender, ethnicity_1 and ethnicity_2, in the data set.
+
+
+
+
+**Exercise 3: Improving ggplot figure**
+
+```{r Exercice 3, echo = FALSE}
+# create the divergent variable, weight lost
+diet_data <- diet_data %>%
+  group_by(Participant) %>%
+  mutate(dev_wt = 
+           Weight-first(Weight)) # new column weights minus baseline weights
+
+  
+# produce a plot with diverging color scale representing weight lost 
+ggplot(diet_data, 
+       aes(x = Week, y = Weight, color = dev_wt))+
+  geom_point()+
+  labs(
+    title = "Fig. 9: Scatter plot with diverging color scales representing weights lost from baseline",
+    x = "Number of weeks",
+    y = "Weight(Kg)",
+    color = "Weight lost from baseline") +
+  scale_color_carto_c(type = "diverging", palette = "Earth")+
+  scale_x_continuous(breaks = seq(0, 16, by = 2)) +
+  theme(legend.position = "top") +
+  theme(plot.title = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 9),
+        axis.text = element_text(size = 9),
+        legend.title = element_text(size = 10)
+        )
+```
+
+
+
+
+The original plot does not demonstrate storytelling visualization characteristics for the following reasons:
+
+1. Creating a legend for individual observations is not appropriate. Legends are usually created for groups for more appealing visual storytelling.
+2. Joining the individual points with lines in this context makes it difficult to make any meaning out of it, especially as the lines cross one another
+3. The plot does not give any information about the reference point, i.e. the baseline, with respect to other points. This is the purpose of the visualization of this study yet it is missing. 
+4. No title, no unit for the weight axis, making it difficult for the Figure to stand alone as an independent plot.
+5. There is no prudent use of color, as most of the lines even have the same color. As pointed out in the first point the use of color on individual observations is not where the emphasis  should be. It is more prudent to use just one color for all observations and distinguish what is critical in this research with a different color, which are the deviated weights (weight loss).
+
+To improve upon the visual storytelling capabilities of this plot, I would go for a plot with diverging color scales which represent the deviation of the weights from the reference point (the baseline, i.e. weight at week 0), throughout the period of the study. The emphasis here is on deviated weights, which is weight loss, colored in the form of sequential color scales to indicate the magnitude of the weights lost by the participants at every measurement. 
+
+From this improved plot (Fig. 9), it is evident that the intensity of the brown color which indicates higher magnitude of weight loss, increases as the number of weeks increases for several participants, somewhat depicting the efficacy of the diet in reducing weight. This improved plot has more visual storytelling characteristics compared to the original plot.
+
+
+
+
+
+**Exercise 4: Exploring relationships through visualizations**
+
+
+```{r Exercice 4, echo=FALSE, message = FALSE}
+
+# Step 1: Create average SBP variable
+nhanes_clean <- nhanes_clean %>%
+  mutate(ave_sys =
+           rowMeans(across(
+             c(systolic_bp_1, systolic_bp_2, systolic_bp_3, systolic_bp_4)
+           ), 
+           na.rm = TRUE)
+         )
+# Step 2: create new data set of filtered data 
+nhanes_clean_fil <- nhanes_clean %>%
+  filter(!is.na(age),
+         !is.na(gender),
+         !is.na(ave_sys)
+         ) # verify missing values with skimr function
+
+# Step 3: Create a new categorical variable of ave_sys classification
+nhanes_clean_fil <- nhanes_clean_fil %>%
+  mutate(SBP_cat = 
+           case_when(
+             ave_sys < 120 ~ "Normal BP",
+             ave_sys >= 120 & ave_sys < 129 ~ "Elevated BP",
+             ave_sys >= 130 & ave_sys <= 139 ~ "Stage 1 hypertension",
+             TRUE                            ~ "Stage 2 hypertension"
+           ))
+
+# Step 4: visualize the distributions of some variables
+
+# visualize the distribution of gender (1)
+ggplot(nhanes_clean_fil,
+       aes(x = gender)) +
+  geom_bar(fill = "turquoise", color = "black") + 
+  labs(x = "Gender",
+       y = "Number of respondents",
+       title = "Fig. 10: Repartition of the population by gender") +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+
+# visualize the distribution of blood pressure groups (2)
+ggplot(nhanes_clean_fil,
+       aes(x = reorder(SBP_cat, ave_sys))) +
+  geom_bar(fill = "turquoise", color = "black") + 
+  labs(x = "Systolic blood presure",
+       y = "Number of respondents",
+       title = "Fig. 11: Repartition of the population by blood presure groups") +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10)
+        )
+
+# Visualize the distribution of blood pressure (3)  
+ggplot(nhanes_clean_fil,
+  aes(x= ave_sys, fill = "lightgreen")) + 
+  geom_histogram() +
+  labs(x = "Systolic blood pressure (mmHg)",
+       y = "Number of respondents",
+       title = "Fig. 12: Distribution of systolic blood pressure of respondents") +
+  scale_x_continuous(breaks = seq(0, 300, by = 30)) +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.position = "none")
+        
+# visualize distribution & some summary statistics of blood pressure groups(4)
+ggplot(nhanes_clean_fil,
+       aes(y = ave_sys, x = reorder(SBP_cat, ave_sys))) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(x = "Blood pressure category",
+       y = "Systolic blood pressure (mmHg)",
+       title = "Fig. 13: Boxplot of systolic blood pressure") +
+  scale_y_continuous(breaks = seq(0, 300, by = 30)) +
+  theme(plot.title = element_text(size = 11),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.position = "none")
+
+# Step 5: Investigate how hypertension change across age and gender
+ggplot(nhanes_clean_fil,
+       aes(x= ave_sys, fill = reorder(SBP_cat, ave_sys))) +
+  geom_histogram() +
+  facet_grid(
+    gender ~ age_cat,
+    labeller = labeller(
+      gender = c(
+        'Female' = "Females",
+        'Male' = "Males")
+    )) +
+  labs(x = "Systolic blood presure (mmHg",
+       y = "Number o0f respondents",
+       title = "Fig. 14: Changes in hypertension across age and gender groups",
+       fill = "Blood pressure categories") +
+  scale_fill_manual(values = 
+                      c("Normal BP" = "forestgreen",
+                        "Elevated BP" = "lightgreen",
+                        "Stage 1 hypertension" = "orange",
+                        "Stage 2 hypertension" = "red")) +
+  scale_x_continuous(breaks = seq(50, 200, by = 50)) +
+  theme(legend.position = "bottom",
+        plot.title = element_text(size = 11),
+        axis.title = element_text(size = 11),
+        legend.text = element_text(size = 9),
+        axis.text = element_text(size = 8),
+        legend.title = element_text(size = 10),
+        legend.key.size = unit(0.40, "cm")
+        )
+    
+
+```
+
+
+
+
+
+##### Report
+
+
+The sample size reduced from 29,400 to 21,604 after filtering out missing values in the age, gender and average systolic blood pressure variables. A common distribution in both data sets (old and new), which is the distribution of gender indicates no marked difference (Fig. 6 and Fig. 10). The distribution of gender in both data sets is similar, meaning the data did not really change after filtering and that, comparable inferences could be made from both data sets.This commonality or the persistence of the distribution in gender could be attributed to the large sample size, as the sample size still remained significantly high after applying the filtering arguments.
+
+The distribution of blood pressure in the study population is right skewed from the histogram plot (Fig. 12). This is more evident when stratified by blood pressure categories in the natural order as shown in the bar plot (Fig.11).From the plots there are more individuals with normal blood pressure but relatively fewer number of individuals described as hypertensives, that is with high blood pressure readings.
+
+To analyse these categories further, a boxplot (Fig. 13) was used to view the distribution of the central tendencies or  some summary statistics. The plot shows the 25th percentle, the median and the 75th percentile of each blood pressure group. It further gives information about the nature of the distribution of each category and the existence of extreme values or outliers for each. From this plot it is evident that the individuals with normal blood pressure show a left skewed distribution while the stage 2 hypertensives show right skewed distribution and more outliers. The elevated and and the stage 1 blood pressure groups both appear to show normal distribution (Fig. 13).
+
+The plot of the hypertension categories by gender and sex (Fig. 14) clearly shows the vulnerability of hypertension in older people. The risk of hypertension increases with age, with significantly very high proportions in people aged 60 years and above and quiet high in ages 40 to 59 years. The risk appears to remain the same by gender across age groups, but it is slightly higher in males compared to females, especially from 18 year and above. At the latter ages, however, females appear to be at higher risk compared to males.
+
+```{r, echo=FALSE}
+
+
+```
+
+
