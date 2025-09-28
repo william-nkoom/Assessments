@@ -1,0 +1,95 @@
+---
+title: "BIOS 640 Assessment week  2"
+author: "William Opoku-Nkoom"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  pfd_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+*The National Health and Nutrition Examination Survey (NHANES) is a population health survey of the United States conducted periodically by the Center for Diseases and Control (CDC). This is a brief report on the overview of data cleaning and manipulation procedures done on the data.* 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, results = 'hide')
+```
+
+
+**DATA CLEANING AND MANIPULATION**
+
+
+##### The process involves the following steps:
+
+* Load relevant packages
+* Import data sets
+* See column names and check dimensions of the data
+* Look at the types of variables in the data
+* Define names or levels of codes used in categorical variables
+* View few top and bottom rows of the data
+* Inspect duplicate rows and remove them if there are
+
+
+
+```{r }
+pacman::p_load(here,
+               rio,
+               tidyverse,
+               rmarkdown,
+               tinytex
+               ) # load relevant packages
+```
+
+#### Import data sets
+```{r NHANES}
+# import data sets
+demo_17_18 <- import(here("Reports", "week_2", "Assmnt_2", "demo_17_18.xpt"))
+view(demo_17_18)
+demo_15_16 <- import(here("Reports", "week_2", "Assmnt_2", "demo_15_16.xpt"))
+demo_13_14 <- import(here("Reports", "week_2", "Assmnt_2", "demo_13_14.xpt"))
+bp_17_18 <- import(here("Reports", "week_2", "Assmnt_2", "bp_17_18.xpt"))
+bp_15_16 <- import(here("Reports", "week_2", "Assmnt_2", "bp_15_16.xpt"))
+bp_13_14 <- import(here("Reports", "week_2", "Assmnt_2", "bp_13_14.xpt"))
+names(demo_17_18)
+dim(demo_17_18)
+head(demo_17_18) # check first few rows
+tail(demo_17_18) # check last few rows
+str(demo_17_18) # look at the variable types of the data  
+```
+![Fig. 1: Outputs of imported data sests of the NHANES](C:\Users\WILLIAM\OneDrive - McGill University\BIOS 640\Week 2\Import.png)
+
+#### Recode categorical variables
+```{r}
+demo_17_18 <- demo_17_18 %>%
+  mutate(RIDSTATR = 
+           recode(RIDSTATR, '1' = "Interviewd only", '2' = "Interview&MEC exam")
+         ) %>%
+  mutate(RIAGENDR = 
+           recode(RIAGENDR, '1' = "Male", '2' = "Female")
+         ) %>%
+  mutate(RIDRETH1 = 
+           recode(RIDRETH1, '1' = "Mexican American", '2' = "Other Hispanic", '3' = "Non Hispanic White", '4' = "Hispanic Black", '5' = "Other Race-Include Multirace")
+         )
+
+demo_17_18
+
+```
+![Fig. 2: Outputs of some mutated categorical variables of the NHANES data sets](C:\Users\WILLIAM\OneDrive - McGill University\BIOS 640\Week 2\Mutate.png)
+
+#### Inspect duplicate rows
+```{r}
+nrow(unique(demo_17_18)) == nrow(demo_17_18) # no duplicate rows
+nrow(unique(demo_15_16)) == nrow(demo_15_16) # no duplicate rows
+nrow(unique(demo_13_14)) == nrow(demo_13_14) # no duplicate rows
+nrow(unique(bp_13_14)) == nrow(bp_13_14) # no duplicate rows
+nrow(unique(bp_15_16)) == nrow(bp_15_16) # no duplicate rows
+nrow(unique(bp_17_18)) == nrow(bp_17_18) # no duplicate rows
+```
+![Fig. 3: Outputs of inpection of duplicated rows of the the NHANES data sets](C:\Users\WILLIAM\OneDrive - McGill University\BIOS 640\Week 2\Duplicates.png)
+
+#### Brief overview of the 2017-2018 demographic data set
+![Fig. 4: Overview of the structure of the 2017-2018 demographic data of the NHANES](C:\Users\WILLIAM\OneDrive - McGill University\BIOS 640\Week 2\str.png)
