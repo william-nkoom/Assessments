@@ -3,9 +3,11 @@ title: "BIOS 640 Assessment Week 3"
 author: "William Opoku-Nkoom"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  word_document: default
-  html_document: default
+  html_document:
+    toc: true 
+    toc_float: true 
+    theme: united
+    highlight: zenburn
 editor_options:
   chunk_output_type: console
 ---
@@ -22,6 +24,7 @@ pacman::p_load(here,
                ggpubr,
                gghighlight,
                rcartocolor,
+               DT,
                skimr
                ) # load essential packages
 ```
@@ -40,10 +43,12 @@ str(diet_data) # view structure of the diet data frame
 skim(nhanes_clean) # verify missing values
 ```
 
-**Exercise 1: Reproducing and arranging ggplot2 figures**
 
-```{r Exercise 1, echo = FALSE}
-# produce a histogram of age 20 years and above, grouped by gender - First Figure
+# Exercise 1: Reproducing ggplot2 {.tabset}
+
+## Histogram age 20 and above
+
+```{r histogram age 20 and above, echo = FALSE}
 nhanes_20 <- nhanes_clean %>%
   filter(age >= 20) %>% # filter age 20 years and above
   ggplot(aes(x= age, fill = gender)) + # group by gender
@@ -59,8 +64,11 @@ nhanes_20 <- nhanes_clean %>%
   )
 
 nhanes_20
+```
 
-  # bar graph of ethnicity_2 grouped by gender - Figure 2
+## Bar graph ethnicity by gender
+
+```{r bar grapgh etnicity by gender, echo = FALSE}
 nhanes_bar <- nhanes_clean %>%
   ggplot(aes(x = ethnicity_2, fill = gender)) + # group by gender
   geom_bar(position = "fill" ) + # stack to same height
@@ -73,6 +81,12 @@ nhanes_bar <- nhanes_clean %>%
         legend.text = element_text(size = 10)
         )
 nhanes_bar
+
+```
+
+## Combined plots 
+
+```{r combined plots, echo = FALSE}
 
 # combine the 2 plots with the cow_plot package
 plot_grid(
@@ -90,17 +104,24 @@ annotate_figure(combined_gg,
                 bottom = text_grob("Fig. 4: Combined plot with ggarrange", size = 10, face = "bold")) # add global title
 ```
 
-##### Differences between the outputs from the two packages
+### Differences between outputs
 The layout of the combination produced from the ggpubr package (Fig.4), i.e. with the ggarrange() function is better than that produced from the cowplot package, i.e. with the plot_grid() function. This is because while the former permits you to retain only one legend in the output automatically, this argument is not permitted in the latter function, unless you extract them first and add a legend to the combined plot, which is a manual process and time consuming. 
 
 Moreover, the output from the former produces equal dimensions (i.e. same width for plot A and B and likewise the length). On the contrary, the dimensions of both plots are not the same from the output of the latter. The latter function shrinks the width of the first plot. 
 
 
 
-**Exercise 2: Visualizing key characteristics**
+# Exercise 2: Key characteristics
 
-```{r Exercise 2, echo = FALSE, message = FALSE}
+## NHANES dataset - overview
 
+```{r NHANES dataset, echo = FALSE, message = FALSE, warning = FALSE}
+datatable(nhanes_clean)
+```
+
+## Visualising distributions
+
+```{r Exercise 2, echo = FALSE, message = FALSE, warning = FALSE}
 # visualize age distribution by gender and ethnicity
 age_dist <- ggplot(nhanes_clean,
                    aes(x = age)) +
@@ -174,7 +195,7 @@ nhanes_clean <- nhanes_clean %>%
 
 
 
-##### Description of the distributions
+## Description of distributions
 
 In general the distribution of age (Fig. 5) is multimodal. This is typically evident among the Whites who dominate in the study population.The multimodal distribution is equally evident among Blacks and Mexicans. In these three population sub-groups, the peaks of the distribution can be observed roughly among respondents aged less or equal 20 years, between 30-40 years, between 50-60 years and 60-70 years. This is very clear among the Whites. The age distributions among Blacks, Mexicans and Other ethnicity, including Other Hispanics could be described as skewed to the right. In other words the number of respondents decreases with age in these study population sub-groups. The distribution of age among the Asians appear to be normal. There is basically no distinction between males and females with respect to their distribution by age. 
 
@@ -185,7 +206,7 @@ There are no missing values of these variables, i.e. age, gender, ethnicity_1 an
 
 
 
-**Exercise 3: Improving ggplot figure**
+# Exercise 3: Improving ggplot 
 
 ```{r Exercice 3, echo = FALSE}
 # create the divergent variable, weight lost
@@ -215,7 +236,7 @@ ggplot(diet_data,
         )
 ```
 
-
+## Justifying storeytelling  
 
 
 The original plot does not demonstrate storytelling visualization characteristics for the following reasons:
@@ -234,7 +255,7 @@ From this improved plot (Fig. 9), it is evident that the intensity of the brown 
 
 
 
-**Exercise 4: Exploring relationships through visualizations**
+# Exercise 4: Relationships 
 
 
 ```{r Exercice 4, echo=FALSE, message = FALSE}
@@ -353,7 +374,7 @@ ggplot(nhanes_clean_fil,
 
 
 
-##### Report
+## Summary report
 
 
 The sample size reduced from 29,400 to 21,604 after filtering out missing values in the age, gender and average systolic blood pressure variables. A common distribution in both data sets (old and new), which is the distribution of gender indicates no marked difference (Fig. 6 and Fig. 10). The distribution of gender in both data sets is similar, meaning the data did not really change after filtering and that, comparable inferences could be made from both data sets.This commonality or the persistence of the distribution in gender could be attributed to the large sample size, as the sample size still remained significantly high after applying the filtering arguments.
