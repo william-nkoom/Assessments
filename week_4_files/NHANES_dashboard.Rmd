@@ -1,0 +1,87 @@
+---
+title: "NHANES Dashboard"
+author: "William Opoku-Nkoom"
+date: "`r Sys.Date()`"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r packages, include = FALSE}
+# load essential packages
+pacman::p_load(here,
+               rio,
+               tidyverse,
+               janitor,
+               ggplot2,
+               flexdashboard,
+               knitr
+)
+
+# import NHANES dataset
+nhanes_clean <- import(here("week_3", "Data", "cleaned_NHANES.csv"))
+nhanes_clean <- nhanes_clean %>%
+  mutate(ave_sys =
+           rowMeans(across(
+             c(systolic_bp_1, systolic_bp_2, systolic_bp_3, systolic_bp_4)
+           ), 
+           na.rm = TRUE)
+         )
+# Step 2: create new data set of filtered data 
+nhanes_clean_fil <- nhanes_clean %>%
+  filter(!is.na(age),
+         !is.na(gender),
+         !is.na(ave_sys)
+         ) # verify missing values with skimr function
+
+```
+
+
+
+## Row {data-height=650}
+
+
+
+
+
+
+```{r, out.height= "85%", out.width= "85%", fig.align ='right'}
+knitr::include_graphics(here("week_3", "Figures", "age_dist.png"))
+
+```
+
+
+
+## Row {data-height=350}
+
+#### Proportion of individuals aged 20 years and above 
+
+```{r}
+prop_20 <- mean(nhanes_clean$age >= 20)*100
+gauge(
+  value = 58.02,
+  min = 0,
+  max = 100,
+  symbol = "%",
+  label = "pink",
+  )
+
+```
+
+#### Proportion (20 years+) with average systolic pressure > 120 mmHg
+
+```{r}
+prop_120 <- mean(nhanes_clean_fil$ave_sys > 120)*100
+gauge(
+  value = 41.9,
+  min = 0,
+  max = 100,
+  symbol = "%",
+  label = "red",
+  )
+
+```
+
