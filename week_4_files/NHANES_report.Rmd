@@ -1,0 +1,232 @@
+---
+title: "Summary report of the NHANES data set"
+author: "William Opoku-Nkoom"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+link-citations: true
+bibliography: reference.bib
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(here,
+               rio,
+               tidyverse,
+               viridis,
+               readxl,
+               DT,
+               dplyr,
+               kable,
+               kableExtra,
+               knitr,
+               forcats
+) # upload relevant packages
+
+# import NHANSE data set
+nhanes_clean <- import(here("week_3", "Data", "cleaned_NHANES.csv")) 
+
+```
+
+## Introduction
+
+The National Health and Nutrition Survey is an annual population survey conducted within the US population. The host institution of both the survey and the data is the National Center for Health Statistics of the United States[@CitekeyMisc].The survey habitually collects data on demography and some health indicators like body mass index and blood pressure.
+
+
+
+```{r gender, echo = FALSE}
+# summary statistics for gender
+gender_summary <- nhanes_clean %>%
+  rename(Year = wave_id) %>%
+  group_by(Year) %>%
+  summarise(
+    `Female, n (%)` = paste0(sum(gender == "Female"), " (", round(sum(gender == "Female") / n() * 100, 1), ")"),
+    `Male, n (%)` = paste0(sum(gender == "Male"), " (", round(sum(gender == "Male") / n() * 100, 1), ")")
+  )
+
+# use tables for gender
+nhanes_clean$wave_id <- as.character(nhanes_clean$wave_id)
+gender_year <- table(nhanes_clean$wave_id, nhanes_clean$gender)
+# Proportions by row, out of 100, 1 decimal
+percnt_gen <- round(prop.table(gender_year, margin = 1) * 100, 1)
+# combine to a full table
+full_gen <- as.data.frame(cbind(
+	n = rowSums(gender_year), 		# Sample size
+	Female = round(percnt_gen[, 1], 1), 	# No
+	Male = round(percnt_gen[, 2], 1), 	# Yes
+	Year = c(2015, 2016, 2017)
+)) 
+
+# full join the 2 tables
+join_gen <- full_join(gender_summary, full_gen,
+                          by = "Year"
+                          )
+join_gen <- join_gen %>%
+  select(-Male, -Female) %>% # remove duplicate columns
+  rename(Total = n)
+```
+
+
+```{r ethnicity, echo = FALSE}
+ethnicity_summary <- nhanes_clean %>%
+  rename(Year = wave_id) %>%
+  group_by(Year) %>%
+  summarise(
+    `Asian, n (%)` = paste0(sum(ethnicity_2 == "Asian"), " (", round(sum(ethnicity_2 == "Asian") / n() * 100, 1), ")"),
+    `Black, n (%)` = paste0(sum(ethnicity_2 == "Black"), " (", round(sum(ethnicity_2 == "Black") / n() * 100, 1), ")"),
+    `Mexican, n (%)` = paste0(sum(ethnicity_2 == "Mexican"), " (", round(sum(ethnicity_2 == "Mexican") / n() * 100, 1), ")"),
+    `Other Hispanic, n (%)` = paste0(sum(ethnicity_2 == "Other Hispanic"), " (", round(sum(ethnicity_2 == "Other Hispanic") / n() * 100, 1), ")"),
+    `White, n (%)` = paste0(sum(ethnicity_2 == "White"), " (", round(sum(ethnicity_2 == "White") / n() * 100, 1), ")"),
+    `Other, n (%)` = paste0(sum(ethnicity_2 == "Other"), " (", round(sum(ethnicity_2 == "Other") / n() * 100, 1), ")")
+    )
+
+```
+
+
+
+```{r systolic pressure, echo = FALSE}
+# calculate average systolic pressure
+nhanes_clean <- nhanes_clean %>%
+  mutate(ave_sys =
+           rowMeans(across(
+             c(systolic_bp_1, systolic_bp_2, systolic_bp_3, systolic_bp_4)
+           ), 
+           na.rm = TRUE)
+         )
+
+# summary statistics for systolic pressure
+sys_summary <- nhanes_clean %>%
+  rename(Year = wave_id) %>%
+  group_by(Year) %>%
+  summarise(
+    `Mean (SD)` = paste0(round(mean(ave_sys, na.rm = TRUE), 1), " (", round(sd(age, na.rm = TRUE), 1), ")"),
+    Median = round(median(ave_sys, na.rm = TRUE), 1),
+    `Min - Max` = paste(round(min(ave_sys, na.rm = TRUE), 1), round(max(ave_sys, na.rm = TRUE), 1), sep = " - ")
+  )
+
+```
+
+
+
+```{r combine, echo = FALSE, message = FALSE, warning = FALSE}
+# gender table as data frame
+gen_tab <- data.frame(
+  Year = c("2015", "2016", "2017"),
+  Female = c("5172 (50.8)","5079 (50.9)", "4697 (50.8)"),
+  Male = c("5003 (49.2)", "4892 (49.1)", "4557 (49.2)"),
+  Total = c("10175 (100.0)", "9971 (100.0)", "9254 (100.0)")
+  ) 
+
+# pivot_long gender table
+gen_long <- gen_tab %>%
+  pivot_longer(
+    cols = c(Female, Male, Total),
+    names_to = "Category",
+    values_to = "Value"
+  ) %>%
+  mutate(Variable = "Gender") %>%
+  select(Year, Variable, Category, Value)
+
+# ethnicity summary table as data frame 
+eth_tab <- data.frame(
+  Year = c("2015", "2016", "2017"),
+  Asian = c("1074 (10.6)", "1042 (10.5)", "1168 (12.6)"),
+  Black = c("2267 (22.3)", "2129 (21.4)", "2115 (22.9)"),
+  Mexican = c("1730 (17.0)", "1921 (19.3)", "1367 (14.8"),
+  Other_Hispanic = c("960 (9.4)", "1308 (13.1)", "820 (8.9)"),
+  White = c("3674 (36.1)", "3066 (30.7)", "3150 (34.0)"),
+  Other_Ethnicity = c("470 (4.6)", "505 (5.1)", "634 (6.9)")
+)
+
+# pivot_long ethnicity table
+eth_long <- eth_tab %>%
+  pivot_longer(
+    cols = c(Asian, Black, Mexican, Other_Hispanic, White, Other_Ethnicity),
+    names_to = "Category",
+    values_to = "Value"
+    ) %>%
+  mutate(Variable = "Ethnicity") %>%
+  select(Year, Variable, Category, Value)
+
+# systolic pressure summary statistics as data frame
+sys_tab <- data_frame(
+  Year = c("2015", "2016", "2017"),
+  Mean = c("118.3", "120.4", "121.7"),
+  SD = c("24.4", "24.8", "25.5"),
+  Median = c("115.3", "117.3", "118.0"),
+  Min = c("64.7", "74.0", "72.7"),
+  Max = c("228.7", "231.3", "234.0")
+)
+
+# pivot_long systolic pressure summary statistcs table
+sys_long <- sys_tab %>%
+  pivot_longer(
+    cols = c(Mean, SD, Min, Median, Max),
+    names_to = "Category",
+    values_to = "Value"
+    ) %>%
+  mutate(Variable = "Systolic BP(mmHg)") %>%
+  select(Year, Variable, Category, Value)
+
+# combine tables with bind_rows
+
+combined_long <- bind_rows(gen_long, eth_long, sys_long) 
+
+# pivot_wider the combined table
+combined_wide <- combined_long %>%
+  pivot_wider(names_from = Year, values_from = Value) %>%
+  arrange(factor(Variable, levels = c("Ethnicity", "Gender", "Systolic BP")), Category)
+
+
+   
+
+
+```
+
+
+## Summary description of the NHANSE data set
+
+ *Gender*
+
+The proportion of females is slightly higher than that of males in each year of the study. The sample size of the study population decreased with year from 2015 to 2017.  
+
+ *Ethnicity*
+
+The Whites predominate in the study population with more than a third in each year of the study except for 2016 which was slightly below. Following behind were the Blacks which constituted over 20% of the study population each year (Fig. 1).
+
+ *Systolic Blood Pressure*
+
+The highest average systolic blood pressure was recorded in 2017 (121.7 mmHg), with a standard deviation of 25.5 mmHg. In each year of the study, the median systolic pressure values were slightly lower than the median values. 
+
+
+```{r kable, echo = FALSE}
+combined_wide <- combined_wide %>%
+  kable("latex", booktabs = TRUE,
+        caption = "Summary statistics of gender, ethnicity, systolic pressure of the NHANES data set",
+        align = "llccc") %>%
+  kable_styling(full_width = FALSE, 
+                latex_options = c("hold_position", "repeat_header")) %>%
+  collapse_rows(columns = 1, valign = "top") %>%
+  row_spec(0, bold = TRUE) %>%
+  row_spec(9, bold = TRUE, background = "gray!20") %>%
+  footnote(
+    general = "Values are counts (percent) for categorical variables",
+    footnote_as_chunk = TRUE,
+    escape = FALSE
+  )
+
+combined_wide
+
+```
+
+## Conclusion
+
+In summary the sample size were 10175, 9971, 9254 in 2015, 2016 and 2017 respectively (Fig. 1). Further details on gender, ethnicity and systolic blood pressure values can be found in Fig. 1.
+
+
+```{r, echo = FALSE}
+
+```
+
+## Reference
