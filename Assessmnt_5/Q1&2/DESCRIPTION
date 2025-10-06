@@ -1,0 +1,22 @@
+Package: Assessmnt.5
+Type: Package
+Title: Generate Dummy Variables for Categorica Variables
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "William", "Opoku-Nkoom",
+      email = "william.opoku-nkoom@mail.mcgill.ca",
+      role = c("aut", "cre")
+    )
+  )
+Description: This package generate dummy variables for categorical variables 
+    and sets a reference category for variables with more than 2 levels.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports:
+  pacman,
+  dplyr,
+  magrittr,
+  rio
